@@ -16,6 +16,8 @@ def get_weather(latitude, longitude):
 
 client = OpenAI()
 
+client.api_key = "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"
+
 tools = [{
     "type": "function",
     "name": "get_weather",
