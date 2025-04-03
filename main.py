@@ -82,4 +82,4 @@ def home():
 
 @app.get("/weather")
 def get_results(prompt):
-    start(prompt)
+    return start(prompt)
