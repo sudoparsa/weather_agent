@@ -1,6 +1,10 @@
 from openai import OpenAI
 import requests
 import json
+from fastapi import FastAPI
+
+
+app = FastAPI()
 
 
 
@@ -28,39 +32,53 @@ tools = [{
     "strict": True
 }]
 
-# prompt = "What's the weather like in Paris today?"
-prompt = "How are you?"
-input_messages = [{"role": "user", "content": prompt}]
+def start(prompt):
+    input_messages = [{"role": "user", "content": prompt}]
 
-response = client.responses.create(
-    model="gpt-4o",
-    input=input_messages,
-    tools=tools,
-)
-
-tool_call = response.output[0]
-# print(tool_call)
-
-if tool_call.type == 'function_call':
-    args = json.loads(tool_call.arguments)
-
-    result = get_weather(args["latitude"], args["longitude"])
-
-    print(f"Result: {result}")
-
-    input_messages.append(tool_call)  # append model's function call message
-    input_messages.append({                               # append result message
-        "type": "function_call_output",
-        "call_id": tool_call.call_id,
-        "output": str(result)
-    })
-
-    response_2 = client.responses.create(
+    response = client.responses.create(
         model="gpt-4o",
         input=input_messages,
         tools=tools,
     )
-    print('Final:', response_2.output_text)
 
-elif tool_call.type == 'message':
-    print(tool_call.content[0].text)
+    tool_call = response.output[0]
+    # print(tool_call)
+
+    if tool_call.type == 'function_call':
+        args = json.loads(tool_call.arguments)
+
+        result = get_weather(args["latitude"], args["longitude"])
+
+        print(f"Result: {result}")
+
+        input_messages.append(tool_call)  # append model's function call message
+        input_messages.append({                               # append result message
+            "type": "function_call_output",
+            "call_id": tool_call.call_id,
+            "output": str(result)
+        })
+
+        response_2 = client.responses.create(
+            model="gpt-4o",
+            input=input_messages,
+            tools=tools,
+        )
+        print('Final:', response_2.output_text)
+        return response_2.output_text
+
+    elif tool_call.type == 'message':
+        print(tool_call.content[0].text)
+
+        return tool_call.content[0].text
+    
+# prompt = "What's the weather like in Paris today?"
+# # prompt = "How are you?"
+# start(prompt)
+
+@app.get('/')
+def home():
+    return {"message": "API is running!"}
+
+@app.get("/weather")
+def get_results(prompt):
+    start(prompt)
