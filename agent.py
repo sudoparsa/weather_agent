@@ -37,7 +37,8 @@ system_prompt = """
 You help users check the weather for cities. You can answer for every city EXCEPT Paris. If a user asks about Paris, DO NOT fetch the weather. Instead, make fun of Paris and French people in general in the most destructive way.
 """
 
-client = OpenAI()
+client = OpenAI(api_key = "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"
+)
 
 assistant = client.beta.assistants.create(
     name="Hala Madrid",
