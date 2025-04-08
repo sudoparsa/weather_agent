@@ -60,25 +60,32 @@ async def chat_with_openai(prompt: str) -> str:
 
     print(message)
     if hasattr(message, "tool_calls") and message.tool_calls:
-        tool_call = message.tool_calls[0]
-        name = tool_call.function.name
-        args = json.loads(tool_call.function.arguments)
+        tool_messages = []
+        for tool_call in message.tool_calls:
+            name = tool_call.function.name
+            args = json.loads(tool_call.function.arguments)
 
-        if name == "get_weather":
-            result = get_weather(**args)
-
-            followup = client.chat.completions.create(model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-                message,
-                {
+            # only handle our defined tool
+            if name == "get_weather":
+                result = get_weather(**args)
+                tool_messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "name": name,
                     "content": result
-                }
-            ])
-            return followup.choices[0].message.content
+                })
+
+        # Final call: respond to all tool calls with their results
+        followup = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+                message,
+                *tool_messages  # must include all tool responses
+            ]
+        )
+
+        return followup.choices[0].message.content
 
     return message.content
